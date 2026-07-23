@@ -2,7 +2,7 @@
 # -------------------------
 # Torch / HF Core（关键修复）
 # -------------------------
-torch==2.5.0
+torch
 transformers==4.36.2
 tokenizers==0.15.2
 accelerate
@@ -13,7 +13,7 @@ sentencepiece
 # Embedding / Vector DB
 # -------------------------
 sentence-transformers==2.7.0
-faiss-cpu==1.8.0.post1
+faiss-cpu
 chromadb==0.4.13
 
 # -------------------------
@@ -41,6 +41,8 @@ llama-index-cli==0.1.13
 llama-parse==0.4.9
 llamaindex-py-client==0.1.19
 
+ragas>=0.2.0
+
 # -------------------------
 # OpenAI / Token
 # -------------------------
@@ -52,7 +54,7 @@ tiktoken==0.12.0
 # -------------------------
 numpy==1.26.4
 pandas==2.2.2
-scipy==1.13.1
+scipy>=1.14.0
 scikit-learn==1.5.0
 datasets==2.16.0
 pyarrow==22.0.0
@@ -67,7 +69,7 @@ pypdfium2==5.0.0
 python-docx==1.1.2
 docx2txt==0.8
 pytesseract==0.3.13
-pillow==10.3.0
+pillow>=10.4.0
 
 # -------------------------
 # Web / API / Server（reserved）

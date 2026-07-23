@@ -1,3 +1,5 @@
 /LoggingFlask/tests/
 /chroma_data/
+/chroma_data_eval/
+/eval/results/
 .idea
