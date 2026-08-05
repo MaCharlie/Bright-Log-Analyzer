@@ -71,7 +71,25 @@ class VectorDB(object):
 
         return cls._instances[key]
 
+    @classmethod
+    def reset_instance(cls, chroma_path=None, collection_name=None):
+        """从注册表中移除指定实例（不删除磁盘数据）。"""
+        chroma_path = chroma_path or config.chroma_data_path
+        collection_name = collection_name or config.collection_name
+        key = (chroma_path, collection_name)
+        cls._instances.pop(key, None)
 
+    @classmethod
+    def reset_eval_store(cls):
+        """
+        清空评估向量库：删除磁盘目录 + 清除内存中的 eval 实例。
+
+        每次跑 ragas 评估前调用，确保在干净的索引上重复实验。
+        """
+        eval_path = Path(config.eval_chroma_data_path)
+        if eval_path.exists():
+            shutil.rmtree(eval_path)
+        cls.reset_instance(config.eval_chroma_data_path, config.eval_collection_name)
 
     def store_log_blocks(self, log_blocks: list):
         """
