@@ -1,5 +1,12 @@
-/LoggingFlask/tests/
 /chroma_data/
 /chroma_data_eval/
-/eval/results/
+/log_analysis/eval/results/
 .idea
+.continue
+.cursor
+.vscode
+.venv/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
