@@ -1,3 +1,4 @@
+# 本地/IDE 产物与密钥，勿提交
 /chroma_data/
 /chroma_data_eval/
 /log_analysis/eval/results/
@@ -5,8 +6,13 @@
 .continue
 .cursor
 .vscode
+
+# 忽略任意本地虚拟环境目录（本项目请用 IDE 中已配置的 Logging 解释器；
+# 不要在仓库内再建一份 .venv。此行只是防止误提交环境文件，不是要求创建 .venv。）
 .venv/
+venv/
 .env
+
 __pycache__/
 *.pyc
 .pytest_cache/
