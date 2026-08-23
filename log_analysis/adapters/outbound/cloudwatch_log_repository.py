@@ -5,7 +5,7 @@ Call Sequence:
     1. start_query(...)  → to get queryId
     2. loop get_query_results(queryId)，until status turns into Complete / Failed / Cancelled
     3. timeout -> stop_query，raise LogBackendError
-    4. 把 results 里每一行 field/value 解析成 LogEvent
+    4. parse results field/value into list of LogEvent
 
 
 """
@@ -40,16 +40,7 @@ _TERMINAL_STATUSES = frozenset({"Complete", "Failed", "Cancelled", "Timeout"})
 
 
 class CloudWatchLogRepository(LogRepository):
-    """
-    使用 boto3 `logs` 客户端实现 LogRepository。
 
-    可通过构造函数注入 client（单测用 Stubber）与 Settings；
-    生产环境不传 client 时，按 settings.aws_region 创建真实客户端。
-    :param settings: optional settings instance.
-    :param client: CloudWatch Logs Insights client.
-    :param sleep_fn:
-
-    """
 
     def __init__(
         self,
@@ -61,7 +52,8 @@ class CloudWatchLogRepository(LogRepository):
         monotonic_fn=time.monotonic,
     ) -> None:
         self._settings = settings or get_settings()
-        self._client = client or boto3.client(
+        session = boto3.Session(profile_name=self._settings.profile_name)
+        self._client = client or session.client(
             "logs",
             region_name=self._settings.aws_region,
         )
@@ -75,7 +67,8 @@ class CloudWatchLogRepository(LogRepository):
     def query_logs(self, query: LogQuery) -> list[LogEvent]:
         """
 
-        执行一次 Insights 查询并返回解析后的事件列表。
+        core process.
+        execute Insights query and return LogEvent list
 
         Phase 1 constraint：the input param must be cw pipeline statement
         """
@@ -129,7 +122,9 @@ class CloudWatchLogRepository(LogRepository):
             code = exc.response.get("Error", {}).get("Code", "")
             msg = exc.response.get("Error", {}).get("Message", str(exc))
 
-            """ core process: when syntax error, reserve the original msg for agent to self-correct"""
+            """ core process: when syntax error, reserve the original msg for agent to self-correct
+            grammar check by CW Insights will happen in this stage
+            """
             if code in _SYNTAX_ERROR_CODES:
                 raise QuerySyntaxError(message=msg, query=pipeline) from exc
             raise LogBackendError(f"start_query failed [{code}]: {msg}") from exc
@@ -154,9 +149,9 @@ class CloudWatchLogRepository(LogRepository):
                 code = exc.response.get("Error", {}).get("Code", "")
                 msg = exc.response.get("Error", {}).get("Message", str(exc))
 
-                # failed: if considered syntax error, must be pointed out
-                if code in _SYNTAX_ERROR_CODES:
-                    raise QuerySyntaxError(message=msg, query=pipeline) from exc
+                # # not necessary.
+                # if code in _SYNTAX_ERROR_CODES:
+                #     raise QuerySyntaxError(message=msg, query=pipeline) from exc
                 raise LogBackendError(f"get_query_results failed [{code}]: {msg}") from exc
 
             status = last.get("status") or ""
@@ -171,7 +166,7 @@ class CloudWatchLogRepository(LogRepository):
                     f"{self._settings.cw_query_timeout_sec}s (queryId={query_id})"
                 )
 
-            # sleep for 1 second, preventing over-frequently calling
+            # sleep for 1 second, to prevent over-frequently calling
             self._sleep(self._settings.cw_poll_interval_sec)
 
     def _handle_terminal(
@@ -222,10 +217,7 @@ class CloudWatchLogRepository(LogRepository):
 
 def _to_epoch_seconds(dt: datetime) -> int:
     """
-    将 datetime 转为 StartQuery 所需的 Unix epoch 秒。
-
-    若传入 naive datetime，按 UTC 解释（避免本地时区 silently 偏移）。
-    联调时更推荐调用方传入 timezone-aware 时间。
+    parse datetime into Unix epoch that StartQuery needs
     """
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
@@ -236,7 +228,7 @@ def _parse_insight_results(rows: list[list[dict[str, str]]]) -> list[LogEvent]:
     """
     parse GetQueryResults results (CW Insights original JSON format) into list of LogEvent。
 
-    input rows like：
+    CW Insights results like：
         [{"field": "@timestamp", "value": "..."}, {"field": "level", "value": "ERROR"}, ...]
 
     若查询未 fields 展开 JSON 键、但 @message 是约定中的单行 JSON，

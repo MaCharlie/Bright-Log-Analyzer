@@ -18,9 +18,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     """
-    从环境变量（及可选 .env 文件）加载配置。
+    load configuration from .env file
 
-    字段名不区分大小写；也可用同名大写环境变量覆盖，例如 aws_region <- AWS_REGION。
+    Priorities: explicit calling > .env > default values(in this setting)
     """
 
     model_config = SettingsConfigDict(
@@ -32,8 +32,10 @@ class Settings(BaseSettings):
     # CloudWatch API 所在区域；须与 Log Group 实际所在 Region 一致
     aws_region: str = "ap-northeast-1"
 
+    profile_name: str = "log-analyzer-dev"
+
     # 默认查询的 Log Group；也可在每次 LogQuery 里显式传入覆盖
-    cw_log_group: str = "/loganalysis/app-logs"
+    cw_log_group: str = "/apps/light-log-analyzer/dev"
 
     # Insights 异步查询：轮询总超时（秒）。超时后会 stop_query 并抛 LogBackendError
     cw_query_timeout_sec: int = 60
